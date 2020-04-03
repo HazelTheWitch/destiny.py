@@ -22,16 +22,19 @@ class API:
             headers['Authorization'] = authorization
         
         async with self.session.get(url, headers=headers, params=params) as response:
-            json = await response.json()
-
-        if json['ThrottleSeconds'] > 0:
-            await asyncio.sleep(json['ThrottleSeconds'])
+            try:
+                data = await response.json()
+            except:
+                raise ValueError('Destiny API returned a non JSON response')
+        
+        if data['ThrottleSeconds'] > 0:
+            await asyncio.sleep(data['ThrottleSeconds'])
             return await self._get(url, **params)
         
-        if json['ErrorCode'] != 1:
-            raise errors.DestinyAPIError(json['ErrorCode'])
+        if data['ErrorCode'] != 1:
+            raise errors.DestinyAPIError(data['ErrorCode'])
         
-        return json['Response']
+        return data['Response']
     
     async def _post(self, url, data, authorization=None, **params):
         for k in params:
@@ -43,16 +46,19 @@ class API:
             headers['Authorization'] = authorization
 
         async with self.session.post(url, headers=headers, data=data, params=params) as response:
-            json = await response.json()
+            try:
+                data = await response.json()
+            except:
+                raise ValueError('Destiny API returned a non JSON response')
             
-        if json['ThrottleSeconds'] > 0:
-            await asyncio.sleep(json['ThrottleSeconds'])
+        if data['ThrottleSeconds'] > 0:
+            await asyncio.sleep(data['ThrottleSeconds'])
             return await self._post(url, data, **params)
         
-        if json['ErrorCode'] != 1:
-            raise errors.DestinyAPIError(json['ErrorCode'])
+        if data['ErrorCode'] != 1:
+            raise errors.DestinyAPIError(data['ErrorCode'])
         
-        return json['Response']
+        return data['Response']
 
     async def getApplicationApiUsage(self, applicationId, authorization, start=None, end=None):
         return await self._get(basePath + f'/App/ApiUsage/{applicationId}/', authorization=authorization, start=start, end=end)

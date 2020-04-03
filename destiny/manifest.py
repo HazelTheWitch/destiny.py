@@ -3,6 +3,14 @@ from . import errors
 import os
 import zipfile
 
+import aiosqlite
+import sqlite3
+
+import async_timeout
+import json
+
+import inspect
+
 class Manifest:
     """Interfaces with the Destiny 2 manifest.
 
@@ -42,7 +50,7 @@ class Manifest:
             raise KeyError(f'{language} is not a valid language')
 
         if not self.manifests[language]:
-            self.update(language)
+            await self.update(language)
 
         # Honestly no clue but it's in pydest and probably right
         if definition == 'DestinyHistoricalStatsDefinition':
@@ -53,13 +61,11 @@ class Manifest:
             if hash & 0x80000000 != 0:
                 hash = hash - 0x100000000
             identifier = 'id'
-        
-        conn = sqlite3.connect(self.manifests[language])
-        cursor = self.conn.cursor()
 
         try:
-            cursor.execute('SELECT json FROM ? where ? = ?', (definition, identifier, hash))
-            result = cursor.fetchall()
+            async with aiosqlite.connect(self.manifests[language]) as db:
+                async with db.execute(f'SELECT json FROM {definition} WHERE {identifier} = {hash}') as cursor: # <- FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE FUCK THIS LINE
+                    result = await cursor.fetchall()
         except sqlite3.OperationalError as e:
                 if e.args[0].startswith('no such table'):
                     raise ValueError(f'Invalid definition: {definition}')
@@ -88,13 +94,11 @@ class Manifest:
         url = response['mobileWorldContentPaths'][language]
         fp = url.split('/')[-1]
 
-        if not os.path.isfile(fp):
-            await self._download(url, 'manifestZip')
-            if os.path.isfile('manifestZip'):
-                zipRef = zipfile.ZipFile('manifestZip', 'r')
-                zipRef.extractall('./')
-                zipRef.close()
-                os.remove('manifestZip')
+        await self._download('https://www.bungie.net' + url, 'manifestZip')
+        zipRef = zipfile.ZipFile('manifestZip', 'r')
+        zipRef.extractall('.')
+        zipRef.close()
+        os.remove('manifestZip')
         
         self.manifests[language] = fp
     
