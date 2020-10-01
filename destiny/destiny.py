@@ -7,16 +7,19 @@ from . import manifest
 class Destiny:
     """Main class including manifest data and api.
 
-    :param apiFile: a file containing only the API key for the Bungie API
-    :type apiFile: file-like object
+    :param api: a file or string containing only the API key for the Bungie API
+    :type api: file-like object or string
     :param loop: asynchronous event loop to use, defaults to None
     :type loop: class:`asyncio.selector_events.BaseSelectorEventLoop`, optional
     :param contactInfo: Contact information to be provided to Bungie via User Agent, defaults to {'appID': '', 'appName': '', 'version': '', 'url': '', 'contactEmail': ''}
     :type contactInfo: dict, optional
     """
-    def __init__(self, apiFile, *, loop=None, contactInfo=None):
-        with apiFile as f:
-            apiKey = f.read()
+    def __init__(self, apiKey, *, loop=None, contactInfo=None):
+        try:
+            with apiKey as f:
+                apiKey = f.read()
+        except:
+            pass
     
         self._loop = asyncio.get_event_loop() if loop is None else loop
         self._session = aiohttp.ClientSession(loop=self._loop)
